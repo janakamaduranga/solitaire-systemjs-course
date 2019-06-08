@@ -85,13 +85,6 @@ node {
 
 
 
-
-
-
-
-
-
-
 def notify(status){
     emailext (
       to: "wesmdemos@gmail.com",
