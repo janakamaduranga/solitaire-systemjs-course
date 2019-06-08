@@ -1,85 +1,85 @@
-stage &apos;CI&apos;
+stage 'CI';
 node {
 
     checkout scm
 
     // pull dependencies from npm
-    // on windows use: bat &apos;npm install&apos;
-    bat &apos;npm install&apos;
+    // on windows use: bat 'npm install'
+    bat 'npm install'
 
     // stash code &amp; dependencies to expedite subsequent testing
     // and ensure same code &amp; dependencies are used throughout the pipeline
     // stash is a temporary archive
-    stash name: &apos;everything&apos;, 
-          excludes: &apos;test-results/**&apos;, 
-          includes: &apos;**&apos;
+    stash name: 'everything', 
+          excludes: 'test-results/**', 
+          includes: '**'
     
-    // test with PhantomJS for &quot;fast&quot; &quot;generic&quot; results
-    // on windows use: bat &apos;npm run test-single-run -- --browsers PhantomJS&apos;
-    bat &apos;npm run test-single-run -- --browsers PhantomJS&apos;
+    // test with PhantomJS for "fast" "generic" results
+    // on windows use: bat 'npm run test-single-run -- --browsers PhantomJS'
+    bat 'npm run test-single-run -- --browsers PhantomJS'
     
     // archive karma test results (karma is configured to export junit xml files)
-    step([$class: &apos;JUnitResultArchiver&apos;, 
-          testResults: &apos;test-results/**/test-results.xml&apos;])
+    step([$class: 'JUnitResultArchiver', 
+          testResults: 'test-results/**/test-results.xml'])
           
 }
 
 // demoing a second agent
 node {
 
-    // on windows use: bat &apos;dir&apos;
-    bat &apos;dir&apos;
+    // on windows use: bat 'dir'
+    bat 'dir'
 
-    // on windows use: bat &apos;del /S /Q *&apos;
-    bat &apos;del /S /Q *&apos;
+    // on windows use: bat 'del /S /Q *'
+    bat 'del /S /Q *'
 
-    unstash &apos;everything&apos;
+    unstash 'everything'
 
-    // on windows use: bat &apos;dir&apos;
-    bat &apos;dir&apos;
+    // on windows use: bat 'dir'
+    bat 'dir'
 }
 
 //parallel integration testing
 // on windows: swap out Safari below for IE or just use Chrome and Firefox
-stage &apos;Browser Testing&apos;
+stage 'Browser Testing'
 parallel chrome: {
-    runTests(&quot;Chrome&quot;)
+    runTests("Chrome")
 }, firefox: {
-    runTests(&quot;Firefox&quot;)
+    runTests("Firefox")
 }
 
 def runTests(browser) {
     node {
-        // on windows use: bat &apos;del /S /Q *&apos;
-        bat &apos;del /S /Q *&apos;
+        // on windows use: bat 'del /S /Q *'
+        bat 'del /S /Q *'
 
-        unstash &apos;everything&apos;
+        unstash 'everything'
 
-        // on windows use: bat &quot;npm run test-single-run -- --browsers ${browser}&quot;
-        bat &quot;npm run test-single-run -- --browsers ${browser}&quot;
-        step([$class: &apos;JUnitResultArchiver&apos;, 
-              testResults: &apos;test-results/**/test-results.xml&apos;])
+        // on windows use: bat "npm run test-single-run -- --browsers ${browser}"
+        bat "npm run test-single-run -- --browsers ${browser}"
+        step([$class: 'JUnitResultArchiver', 
+              testResults: 'test-results/**/test-results.xml'])
     }
 }
 
 node {
-    notify(&quot;Deploy to staging?&quot;)
+    notify("Deploy to staging?")
 }
 
-input &apos;Deploy to staging?&apos;
+input 'Deploy to staging?'
 
-// limit concurrency so we don&apos;t perform simultaneous deploys
+// limit concurrency so we don't perform simultaneous deploys
 // and if multiple pipelines are executing, 
 // newest is only that will be allowed through, rest will be canceled
-stage name: &apos;Deploy&apos;, concurrency: 1
+stage name: 'Deploy', concurrency: 1
 node {
     // write build number to index page so we can see this update
     
     // deploy to a docker container mapped to port 3000
-    // on windows use: bat &apos;docker-compose up -d --build&apos;
-    bat &apos;docker-compose up -d --build&apos;
+    // on windows use: bat 'docker-compose up -d --build'
+    bat 'docker-compose up -d --build'
     
-    notify &apos;Solitaire Deployed!&apos;
+    notify 'Solitaire Deployed!'
 }
 
 
@@ -94,9 +94,9 @@ node {
 
 def notify(status){
     emailext (
-      to: &quot;wesmdemos@gmail.com&quot;,
-      subject: &quot;${status}: Job &apos;${env.JOB_NAME} [${env.BUILD_NUMBER}]&apos;&quot;,
-      body: &quot;&quot;&quot;&lt;p&gt;${status}: Job &apos;${env.JOB_NAME} [${env.BUILD_NUMBER}]&apos;:&lt;/p&gt;
-        &lt;p&gt;Check console output at &lt;a href=&apos;${env.BUILD_URL}&apos;&gt;${env.JOB_NAME} [${env.BUILD_NUMBER}]&lt;/a&gt;&lt;/p&gt;&quot;&quot;&quot;,
+      to: "wesmdemos@gmail.com",
+      subject: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
+      body: """&lt;p&gt;${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':&lt;/p&gt;
+        &lt;p&gt;Check console output at &lt;a href='${env.BUILD_URL}'&gt;${env.JOB_NAME} [${env.BUILD_NUMBER}]&lt;/a&gt;&lt;/p&gt;""",
     )
 }
